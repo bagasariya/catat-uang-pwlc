@@ -1,0 +1,129 @@
+<%- include('../partials/header', { title: 'Laporan' }) %>
+<%- include('../partials/sidebar') %>
+
+<div class="content">
+  <h1 class="mb-4">Laporan Keuangan</h1>
+
+  <!-- Filter -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="GET" action="/reports" class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">Dari Tanggal</label>
+          <input
+            type="date"
+            name="start_date"
+            value="<%= start_date || '' %>"
+            class="form-control"
+          >
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Sampai Tanggal</label>
+          <input
+            type="date"
+            name="end_date"
+            value="<%= end_date || '' %>"
+            class="form-control"
+          >
+        </div>
+
+        <div class="col-md-4">
+          <button class="btn btn-primary w-100">
+            Tampilkan Laporan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Ringkasan -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-4">
+      <div class="card card-summary">
+        <div class="card-body">
+          <h6 class="text-muted">Total Pemasukan</h6>
+          <h3 class="text-success">
+            Rp <%= Number(totalIncome).toLocaleString('id-ID') %>
+          </h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card card-summary">
+        <div class="card-body">
+          <h6 class="text-muted">Total Pengeluaran</h6>
+          <h3 class="text-danger">
+            Rp <%= Number(totalExpense).toLocaleString('id-ID') %>
+          </h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card card-summary">
+        <div class="card-body">
+          <h6 class="text-muted">Saldo</h6>
+          <h3 class="text-primary">
+            Rp <%= Number(balance).toLocaleString('id-ID') %>
+          </h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tombol Download PDF -->
+  <div class="mb-4">
+    <a
+      href="/reports/pdf?start_date=<%= start_date || '' %>&end_date=<%= end_date || '' %>"
+      class="btn btn-danger"
+    >
+      Download PDF
+    </a>
+  </div>
+
+  <!-- Tabel Transaksi -->
+  <div class="card">
+    <div class="card-body">
+      <table class="table table-bordered table-hover">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Kategori</th>
+            <th>Jenis</th>
+            <th>Deskripsi</th>
+            <th class="text-end">Nominal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (transactions.length === 0) { %>
+            <tr>
+              <td colspan="5" class="text-center text-muted">
+                Tidak ada data.
+              </td>
+            </tr>
+          <% } %>
+
+          <% transactions.forEach(item => { %>
+            <tr>
+              <td><%= item.transaction_date %></td>
+              <td><%= item.categories?.name || '-' %></td>
+              <td>
+                <span class="badge bg-<%= item.categories?.type === 'income' ? 'success' : 'danger' %>">
+                  <%= item.categories?.type === 'income' ? 'Pemasukan' : 'Pengeluaran' %>
+                </span>
+              </td>
+              <td><%= item.description || '-' %></td>
+              <td class="text-end fw-bold">
+                Rp <%= Number(item.amount).toLocaleString('id-ID') %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

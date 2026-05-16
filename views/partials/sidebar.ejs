@@ -1,0 +1,37 @@
+<div class="sidebar">
+  <h4 class="fw-bold mb-4">
+    <i class="bi bi-wallet2"></i>
+    Catat Uang
+  </h4>
+
+  <div class="small mb-3 opacity-75">
+    <%= user?.user_metadata?.full_name || user?.email || 'User' %>
+  </div>
+
+  <a href="/dashboard">
+    <i class="bi bi-speedometer2 me-2"></i>
+    Dashboard
+  </a>
+
+  <a href="/categories">
+    <i class="bi bi-tags me-2"></i>
+    Kategori
+  </a>
+
+  <a href="/transactions">
+    <i class="bi bi-cash-stack me-2"></i>
+    Transaksi
+  </a>
+
+  <a href="/reports">
+    <i class="bi bi-file-earmark-text me-2"></i>
+    Laporan
+  </a>
+
+  <hr class="border-light">
+
+  <a href="/logout">
+    <i class="bi bi-box-arrow-right me-2"></i>
+    Logout
+  </a>
+</div>

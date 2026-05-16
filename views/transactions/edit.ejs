@@ -1,0 +1,67 @@
+<%- include('../partials/header', { title: 'Edit Transaksi' }) %>
+<%- include('../partials/sidebar') %>
+
+<div class="content">
+  <h1 class="mb-4">Edit Transaksi</h1>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="POST" action="/transactions/edit/<%= transaction.id %>">
+
+        <div class="mb-3">
+          <label class="form-label">Kategori</label>
+          <select name="category_id" class="form-select" required>
+            <% categories.forEach(category => { %>
+              <option
+                value="<%= category.id %>"
+                <%= category.id === transaction.category_id ? 'selected' : '' %>
+              >
+                <%= category.name %>
+                (<%= category.type === 'income' ? 'Pemasukan' : 'Pengeluaran' %>)
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Nominal</label>
+          <input
+            type="number"
+            name="amount"
+            class="form-control"
+            min="1"
+            step="0.01"
+            value="<%= transaction.amount %>"
+            required
+          >
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Tanggal</label>
+          <input
+            type="date"
+            name="transaction_date"
+            class="form-control"
+            value="<%= transaction.transaction_date %>"
+            required
+          >
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Keterangan</label>
+          <textarea
+            name="description"
+            class="form-control"
+            rows="3"
+          ><%= transaction.description || '' %></textarea>
+        </div>
+
+        <button class="btn btn-success">Update</button>
+        <a href="/transactions" class="btn btn-secondary">Kembali</a>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

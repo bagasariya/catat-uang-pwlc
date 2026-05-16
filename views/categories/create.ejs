@@ -1,0 +1,35 @@
+<%- include('../partials/header', { title: 'Tambah Kategori' }) %>
+<%- include('../partials/sidebar') %>
+
+<div class="content">
+  <h1 class="mb-4">Tambah Kategori</h1>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="POST" action="/categories/create">
+        <div class="mb-3">
+          <label class="form-label">Nama Kategori</label>
+          <input
+            type="text"
+            name="name"
+            class="form-control"
+            required
+          >
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Tipe</label>
+          <select name="type" class="form-select" required>
+            <option value="income">Pemasukan</option>
+            <option value="expense">Pengeluaran</option>
+          </select>
+        </div>
+
+        <button class="btn btn-success">Simpan</button>
+        <a href="/categories" class="btn btn-secondary">Kembali</a>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,59 @@
+<%- include('../partials/header', { title: 'Kategori' }) %>
+<%- include('../partials/sidebar') %>
+
+<div class="content">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Kategori</h1>
+    <a href="/categories/create" class="btn btn-success">
+      + Tambah Kategori
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>Tipe</th>
+            <th width="180">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (categories.length === 0) { %>
+            <tr>
+              <td colspan="3" class="text-center text-muted">
+                Belum ada kategori.
+              </td>
+            </tr>
+          <% } %>
+
+          <% categories.forEach(category => { %>
+            <tr>
+              <td><%= category.name %></td>
+              <td>
+                <span class="badge bg-<%= category.type === 'income' ? 'success' : 'danger' %>">
+                  <%= category.type === 'income' ? 'Pemasukan' : 'Pengeluaran' %>
+                </span>
+              </td>
+              <td>
+                <a href="/categories/edit/<%= category.id %>" class="btn btn-sm btn-warning">
+                  Edit
+                </a>
+                <a
+                  href="/categories/delete/<%= category.id %>"
+                  class="btn btn-sm btn-danger"
+                  onclick="return confirm('Hapus kategori ini?')"
+                >
+                  Hapus
+                </a>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

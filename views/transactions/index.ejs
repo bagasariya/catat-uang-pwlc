@@ -1,0 +1,71 @@
+<%- include('../partials/header', { title: 'Transaksi' }) %>
+<%- include('../partials/sidebar') %>
+
+<div class="content">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Transaksi</h1>
+    <a href="/transactions/create" class="btn btn-success">
+      + Tambah Transaksi
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <table class="table table-bordered table-hover">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Kategori</th>
+            <th>Jenis</th>
+            <th>Deskripsi</th>
+            <th class="text-end">Nominal</th>
+            <th width="180">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (transactions.length === 0) { %>
+            <tr>
+              <td colspan="6" class="text-center text-muted">
+                Belum ada transaksi.
+              </td>
+            </tr>
+          <% } %>
+
+          <% transactions.forEach(item => { %>
+            <tr>
+              <td><%= item.transaction_date %></td>
+              <td><%= item.categories?.name || '-' %></td>
+              <td>
+                <span class="badge bg-<%= item.categories?.type === 'income' ? 'success' : 'danger' %>">
+                  <%= item.categories?.type === 'income' ? 'Pemasukan' : 'Pengeluaran' %>
+                </span>
+              </td>
+              <td><%= item.description || '-' %></td>
+              <td class="text-end fw-bold">
+                Rp <%= Number(item.amount).toLocaleString('id-ID') %>
+              </td>
+              <td>
+                <a
+                  href="/transactions/edit/<%= item.id %>"
+                  class="btn btn-sm btn-warning"
+                >
+                  Edit
+                </a>
+
+                <a
+                  href="/transactions/delete/<%= item.id %>"
+                  class="btn btn-sm btn-danger"
+                  onclick="return confirm('Hapus transaksi ini?')"
+                >
+                  Hapus
+                </a>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
