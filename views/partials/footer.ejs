@@ -1,2 +1,33 @@
+<div class="app-footer">
+  © <%= new Date().getFullYear() %> Catat Uang · Sistem Pencatatan Keuangan
+</div>
+
+<script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+></script>
+
+<script>
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar')
+    const overlay = document.getElementById('sidebarOverlay')
+
+    if (!sidebar || !overlay) return
+
+    sidebar.classList.toggle('show')
+    overlay.classList.toggle('show')
+  }
+
+  // Tutup sidebar saat ukuran layar berubah ke desktop
+  window.addEventListener('resize', function () {
+    if (window.innerWidth >= 992) {
+      const sidebar = document.getElementById('sidebar')
+      const overlay = document.getElementById('sidebarOverlay')
+
+      if (sidebar) sidebar.classList.remove('show')
+      if (overlay) overlay.classList.remove('show')
+    }
+  })
+</script>
+
 </body>
 </html>
