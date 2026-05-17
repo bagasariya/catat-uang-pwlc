@@ -1,113 +1,310 @@
 const supabase = require('../config/supabase')
-const PDFDocument = require('pdfkit')
 
-function calculateTotals(transactions) {
+exports.index = async (req, res) => {
+  try {
+    const userId = req.session.user.id
+
+    // Deteksi apakah user sudah menekan tombol Tampilkan
+    // /reports                -> false
+    // /reports?month=05&year=2026 -> true
+    // /reports?month=&year=      -> true
+    const hasFilter =
+      req.query.month !== undefined ||
+      req.query.year !== undefined
+
+    const showReport = hasFilter
+
+    // Daftar tahun untuk dropdown
+    const currentYear = new Date().getFullYear()
+    const years = []
+
+    for (let y = currentYear; y >= currentYear - 10; y--) {
+      years.push(y)
+    }
+
+    // Nilai default dropdown (kosong)
+    const month = req.query.month || ''
+    const year = req.query.year || ''
+
+    // Jika belum memilih filter, hanya tampilkan form
+    if (!showReport) {
+      return res.render('reports/index', {
+        title: 'Laporan',
+        showReport: false,
+        month,
+        year,
+        years,
+      })
+    }
+
+    // Ambil semua transaksi user
+    const { data, error } = await supabase
+      .from('transactions')
+      .select(`
+        *,
+        categories(name, type)
+      `)
+      .eq('user_id', userId)
+      .order('transaction_date', { ascending: false })
+
+    if (error) {
+      return res.send(`Error: ${error.message}`)
+    }
+
+    let transactions = data || []
+
+    // Filter bulan dan tahun
+    if (month || year) {
+      transactions = transactions.filter((item) => {
+        const date = new Date(item.transaction_date)
+        const itemMonth = String(date.getMonth() + 1).padStart(2, '0')
+        const itemYear = String(date.getFullYear())
+
+        const matchMonth = month ? itemMonth === month : true
+        const matchYear = year ? itemYear === year : true
+
+        return matchMonth && matchYear
+      })
+    }
+
+    // Hitung ringkasan
+    let totalIncome = 0
+    let totalExpense = 0
+
+    transactions.forEach((item) => {
+      const amount = Number(item.amount)
+
+      if (item.categories?.type === 'income') {
+        totalIncome += amount
+      }
+
+      if (item.categories?.type === 'expense') {
+        totalExpense += amount
+      }
+    })
+
+    const balance = totalIncome - totalExpense
+    const totalData = transactions.length
+
+    // Render laporan
+    res.render('reports/index', {
+      title: 'Laporan',
+      showReport: true,
+
+      month,
+      year,
+      years,
+
+      transactions,
+      totalIncome,
+      totalExpense,
+      balance,
+      totalData,
+    })
+  } catch (err) {
+    res.send(`Error: ${err.message}`)
+  }
+}
+
+const PDFDocument = require('pdfkit')
+const ExcelJS = require('exceljs')
+
+/**
+ * Helper: ambil data laporan sesuai filter month & year
+ */
+async function getReportData(userId, month = '', year = '') {
+  const { data, error } = await supabase
+    .from('transactions')
+    .select(`
+      *,
+      categories(name, type)
+    `)
+    .eq('user_id', userId)
+    .order('transaction_date', { ascending: false })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  let transactions = data || []
+
+  // Filter bulan dan tahun
+  if (month || year) {
+    transactions = transactions.filter((item) => {
+      const date = new Date(item.transaction_date)
+      const itemMonth = String(date.getMonth() + 1).padStart(2, '0')
+      const itemYear = String(date.getFullYear())
+
+      const matchMonth = month ? itemMonth === month : true
+      const matchYear = year ? itemYear === year : true
+
+      return matchMonth && matchYear
+    })
+  }
+
+  // Hitung ringkasan
   let totalIncome = 0
   let totalExpense = 0
 
   transactions.forEach((item) => {
     const amount = Number(item.amount)
-    const type = item.categories?.type
 
-    if (type === 'income') totalIncome += amount
-    if (type === 'expense') totalExpense += amount
+    if (item.categories?.type === 'income') {
+      totalIncome += amount
+    }
+
+    if (item.categories?.type === 'expense') {
+      totalExpense += amount
+    }
   })
 
   return {
+    transactions,
     totalIncome,
     totalExpense,
     balance: totalIncome - totalExpense,
   }
 }
 
-exports.index = async (req, res) => {
-  const userId = req.session.user.id
-  const { start_date, end_date } = req.query
+/**
+ * Export PDF
+ */
+exports.exportPdf = async (req, res) => {
+  try {
+    const userId = req.session.user.id
+    const month = req.query.month || ''
+    const year = req.query.year || ''
 
-  let query = supabase
-    .from('transactions')
-    .select(`
-      *,
-      categories(name, type)
-    `)
-    .eq('user_id', userId)
-    .order('transaction_date', { ascending: false })
+    const report = await getReportData(userId, month, year)
 
-  if (start_date) {
-    query = query.gte('transaction_date', start_date)
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="laporan-keuangan.pdf"'
+    )
+
+    const doc = new PDFDocument({
+      margin: 40,
+      size: 'A4'
+    })
+
+    doc.pipe(res)
+
+    // Judul
+    doc.fontSize(18).text('Laporan Keuangan', {
+      align: 'center'
+    })
+
+    doc.moveDown()
+
+    // Ringkasan
+    doc.fontSize(12)
+    doc.text(
+      `Total Pemasukan: Rp ${report.totalIncome.toLocaleString('id-ID')}`
+    )
+    doc.text(
+      `Total Pengeluaran: Rp ${report.totalExpense.toLocaleString('id-ID')}`
+    )
+    doc.text(
+      `Saldo: Rp ${report.balance.toLocaleString('id-ID')}`
+    )
+
+    doc.moveDown()
+
+    // Detail transaksi
+    doc.fontSize(14).text('Detail Transaksi')
+    doc.moveDown(0.5)
+
+    if (report.transactions.length === 0) {
+      doc.fontSize(11).text('Tidak ada data.')
+    } else {
+      report.transactions.forEach((item, index) => {
+        doc.fontSize(10).text(
+          `${index + 1}. ${item.transaction_date} | ` +
+          `${item.categories?.name || '-'} | ` +
+          `${item.description || '-'} | ` +
+          `Rp ${Number(item.amount).toLocaleString('id-ID')}`
+        )
+      })
+    }
+
+    doc.end()
+  } catch (err) {
+    res.send(`Error: ${err.message}`)
   }
-
-  if (end_date) {
-    query = query.lte('transaction_date', end_date)
-  }
-
-  const { data } = await query
-  const transactions = data || []
-
-  const totals = calculateTotals(transactions)
-
-  res.render('reports/index', {
-    title: 'Laporan',
-    transactions,
-    start_date,
-    end_date,
-    ...totals,
-  })
 }
 
-exports.exportPdf = async (req, res) => {
-  const userId = req.session.user.id
-  const { start_date, end_date } = req.query
+/**
+ * Export Excel
+ */
+exports.exportExcel = async (req, res) => {
+  try {
+    const userId = req.session.user.id
+    const month = req.query.month || ''
+    const year = req.query.year || ''
 
-  let query = supabase
-    .from('transactions')
-    .select(`
-      *,
-      categories(name, type)
-    `)
-    .eq('user_id', userId)
-    .order('transaction_date', { ascending: false })
+    const report = await getReportData(userId, month, year)
 
-  if (start_date) {
-    query = query.gte('transaction_date', start_date)
-  }
+    const workbook = new ExcelJS.Workbook()
+    const worksheet = workbook.addWorksheet('Laporan')
 
-  if (end_date) {
-    query = query.lte('transaction_date', end_date)
-  }
+    // Judul
+    worksheet.addRow(['Laporan Keuangan'])
+    worksheet.addRow([])
 
-  const { data } = await query
-  const transactions = data || []
+    // Ringkasan
+    worksheet.addRow([
+      'Total Pemasukan',
+      report.totalIncome
+    ])
+    worksheet.addRow([
+      'Total Pengeluaran',
+      report.totalExpense
+    ])
+    worksheet.addRow([
+      'Saldo',
+      report.balance
+    ])
 
-  const { totalIncome, totalExpense, balance } =
-    calculateTotals(transactions)
+    worksheet.addRow([])
+    worksheet.addRow([
+      'Tanggal',
+      'Kategori',
+      'Jenis',
+      'Deskripsi',
+      'Nominal'
+    ])
 
-  res.setHeader(
-    'Content-Disposition',
-    'attachment; filename=\"laporan-keuangan.pdf\"'
-  )
-  res.setHeader('Content-Type', 'application/pdf')
+    // Data transaksi
+    report.transactions.forEach((item) => {
+      worksheet.addRow([
+        item.transaction_date,
+        item.categories?.name || '-',
+        item.categories?.type === 'income'
+          ? 'Pemasukan'
+          : 'Pengeluaran',
+        item.description || '-',
+        Number(item.amount)
+      ])
+    })
 
-  const doc = new PDFDocument({ margin: 50 })
-  doc.pipe(res)
+    // Format nominal
+    worksheet.getColumn(5).numFmt =
+      '#,##0'
 
-  doc.fontSize(20).text('Laporan Keuangan', { align: 'center' })
-  doc.moveDown()
-
-  doc.fontSize(12)
-  doc.text(`Total Pemasukan : Rp ${totalIncome.toLocaleString('id-ID')}`)
-  doc.text(`Total Pengeluaran : Rp ${totalExpense.toLocaleString('id-ID')}`)
-  doc.text(`Saldo : Rp ${balance.toLocaleString('id-ID')}`)
-  doc.moveDown()
-
-  transactions.forEach((item, index) => {
-    doc.text(
-      `${index + 1}. ${item.transaction_date} | ` +
-      `${item.categories?.name || '-'} | ` +
-      `Rp ${Number(item.amount).toLocaleString('id-ID')} | ` +
-      `${item.description || '-'}`
+    // Header response
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-  })
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="laporan-keuangan.xlsx"'
+    )
 
-  doc.end()
+    await workbook.xlsx.write(res)
+    res.end()
+  } catch (err) {
+    res.send(`Error: ${err.message}`)
+  }
 }

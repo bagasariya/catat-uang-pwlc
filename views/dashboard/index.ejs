@@ -2,15 +2,17 @@
 <%- include('../partials/sidebar') %>
 
 <div class="content">
+  <!-- Header -->
   <div class="page-header">
-  <h1 class="page-title">Dashboard</h1>
-  <p class="page-subtitle">
-    Ringkasan kondisi keuangan Anda.
-  </p>
-</div>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">
+      Ringkasan kondisi keuangan Anda.
+    </p>
+  </div>
 
-  <div class="row g-4">
-    <div class="col-md-3">
+  <!-- Statistik -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
       <div class="card card-summary">
         <div class="card-body">
           <h6 class="text-muted">Total Pemasukan</h6>
@@ -21,7 +23,7 @@
       </div>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-12 col-sm-6 col-xl-3">
       <div class="card card-summary">
         <div class="card-body">
           <h6 class="text-muted">Total Pengeluaran</h6>
@@ -32,7 +34,7 @@
       </div>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-12 col-sm-6 col-xl-3">
       <div class="card card-summary">
         <div class="card-body">
           <h6 class="text-muted">Saldo</h6>
@@ -43,7 +45,7 @@
       </div>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-12 col-sm-6 col-xl-3">
       <div class="card card-summary">
         <div class="card-body">
           <h6 class="text-muted">Jumlah Transaksi</h6>
@@ -52,6 +54,208 @@
       </div>
     </div>
   </div>
+
+  <!-- Grafik Total -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="mb-3">Grafik Pemasukan vs Pengeluaran</h5>
+      <canvas id="financeChart" height="110"></canvas>
+    </div>
+  </div>
+
+  <!-- Grafik Per Kategori -->
+  <div class="row g-4 mb-4">
+    <!-- Pemasukan per kategori -->
+    <div class="col-12 col-lg-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="mb-3">Pemasukan per Kategori</h5>
+
+          <% if (incomeByCategory.length === 0) { %>
+            <p class="text-muted mb-0">
+              Belum ada data pemasukan.
+            </p>
+          <% } else { %>
+            <div class="mx-auto" style="max-width: 180px;">
+  <canvas id="incomeCategoryChart"></canvas>
 </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pengeluaran per kategori -->
+    <div class="col-12 col-lg-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="mb-3">Pengeluaran per Kategori</h5>
+
+          <% if (expenseByCategory.length === 0) { %>
+            <p class="text-muted mb-0">
+              Belum ada data pengeluaran.
+            </p>
+          <% } else { %>
+            <div class="mx-auto" style="max-width: 180px;">
+  <canvas id="expenseCategoryChart"></canvas>
+</div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transaksi Terbaru -->
+  <div class="card">
+    <div class="card-body">
+      <h5 class="mb-3">5 Transaksi Terbaru</h5>
+
+      <% if (recentTransactions.length === 0) { %>
+        <p class="text-muted mb-0">
+          Belum ada transaksi.
+        </p>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Kategori</th>
+                <th>Jenis</th>
+                <th>Nominal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% recentTransactions.forEach(item => { %>
+                <tr>
+                  <td><%= item.transaction_date %></td>
+                  <td><%= item.categories?.name || '-' %></td>
+                  <td>
+                    <span class="badge bg-<%= item.categories?.type === 'income' ? 'success' : 'danger' %>">
+                      <%= item.categories?.type === 'income' ? 'Pemasukan' : 'Pengeluaran' %>
+                    </span>
+                  </td>
+                  <td class="fw-semibold">
+                    Rp <%= Number(item.amount).toLocaleString('id-ID') %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  // Data dari server
+  const totalIncome = <%= Number(totalIncome) %>;
+  const totalExpense = <%= Number(totalExpense) %>;
+
+  const incomeByCategory = <%- JSON.stringify(incomeByCategory) %>;
+  const expenseByCategory = <%- JSON.stringify(expenseByCategory) %>;
+
+  // Palet warna
+  const chartColors = [
+    '#198754',
+    '#0d6efd',
+    '#ffc107',
+    '#dc3545',
+    '#6f42c1',
+    '#20c997',
+    '#fd7e14',
+    '#6610f2',
+    '#0dcaf0',
+    '#6c757d'
+  ];
+
+  // 1. Bar Chart Total
+  new Chart(document.getElementById('financeChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Pemasukan', 'Pengeluaran'],
+      datasets: [{
+        data: [totalIncome, totalExpense],
+        backgroundColor: [
+          'rgba(25, 135, 84, 0.75)',
+          'rgba(220, 53, 69, 0.75)'
+        ],
+        borderRadius: 10
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return 'Rp ' +
+                Number(context.raw).toLocaleString('id-ID');
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return 'Rp ' +
+                Number(value).toLocaleString('id-ID');
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Fungsi membuat Doughnut Chart
+  function createDoughnutChart(canvasId, data) {
+    if (!data || data.length === 0) return;
+
+    new Chart(document.getElementById(canvasId), {
+      type: 'doughnut',
+      data: {
+        labels: data.map(item => item.name),
+        datasets: [{
+          data: data.map(item => item.total),
+          backgroundColor: chartColors.slice(0, data.length)
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom'
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.label + ': Rp ' +
+                  Number(context.raw).toLocaleString('id-ID');
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // 2. Doughnut Chart Pemasukan
+  createDoughnutChart(
+    'incomeCategoryChart',
+    incomeByCategory
+  );
+
+  // 3. Doughnut Chart Pengeluaran
+  createDoughnutChart(
+    'expenseCategoryChart',
+    expenseByCategory
+  );
+</script>
 
 <%- include('../partials/footer') %>

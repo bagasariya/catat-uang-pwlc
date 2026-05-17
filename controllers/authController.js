@@ -1,59 +1,99 @@
 const supabase = require('../config/supabase')
 
+// ================= LOGIN =================
 exports.showLogin = (req, res) => {
-  res.render('auth/login')
-}
-
-exports.showRegister = (req, res) => {
-  res.render('auth/register')
-}
-
-exports.register = async (req, res) => {
-  const { full_name, email, password } = req.body
-
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name,
-      },
-    },
+  res.render('auth/login', {
+    title: 'Login',
+    error: null,
   })
-
-  if (error) {
-    req.flash('error', error.message)
-    return res.redirect('/register')
-  }
-
-  req.flash('success', 'Registrasi berhasil. Silakan login.')
-  res.redirect('/login')
 }
 
 exports.login = async (req, res) => {
-  const { email, password } = req.body
+  try {
+    const { email, password } = req.body
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+    const { data, error } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-  if (error) {
-    req.flash('error', error.message)
-    return res.redirect('/login')
+    if (error) {
+      return res.render('auth/login', {
+        title: 'Login',
+        error: error.message,
+      })
+    }
+
+    // Simpan session user
+    req.session.user = {
+      id: data.user.id,
+      email: data.user.email,
+    }
+    console.log('Session user:', req.session.user)
+    // Pastikan session benar-benar tersimpan
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err)
+        return res.render('auth/login', {
+          title: 'Login',
+          error: 'Gagal menyimpan session.',
+        })
+      }
+
+      res.redirect('/dashboard')
+    })
+  } catch (err) {
+    console.error('Login error:', err)
+
+    res.render('auth/login', {
+      title: 'Login',
+      error: 'Terjadi kesalahan saat login.',
+    })
   }
+}
 
-  req.session.user = {
-    id: data.user.id,
-    email: data.user.email,
-    user_metadata: data.user.user_metadata,
-  }
-
-  req.session.save(() => {
-    res.redirect('/dashboard')
+// ================= REGISTER =================
+exports.showRegister = (req, res) => {
+  res.render('auth/register', {
+    title: 'Register',
+    error: null,
   })
 }
 
+exports.register = async (req, res) => {
+  try {
+    const { full_name, email, password } = req.body
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name,
+        },
+      },
+    })
+
+    if (error) {
+      return res.render('auth/register', {
+        title: 'Register',
+        error: error.message,
+      })
+    }
+
+    res.redirect('/login')
+  } catch (err) {
+    console.error('Register error:', err)
+
+    res.render('auth/register', {
+      title: 'Register',
+      error: 'Terjadi kesalahan saat registrasi.',
+    })
+  }
+}
+
+// ================= LOGOUT =================
 exports.logout = (req, res) => {
   req.session.destroy(() => {
     res.redirect('/login')

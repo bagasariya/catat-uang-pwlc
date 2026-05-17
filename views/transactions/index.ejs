@@ -2,72 +2,236 @@
 <%- include('../partials/sidebar') %>
 
 <div class="content">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Transaksi</h1>
-    <a href="/transactions/create" class="btn btn-success">
-      + Tambah Transaksi
-    </a>
+  <!-- Header -->
+  <div class="page-header">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div>
+        <h1 class="page-title">Transaksi</h1>
+        <p class="page-subtitle">
+          Kelola seluruh pemasukan dan pengeluaran Anda.
+        </p>
+      </div>
+
+      <a href="/transactions/create" class="btn btn-success">
+        <i class="bi bi-plus-circle me-1"></i>
+        Tambah Transaksi
+      </a>
+    </div>
   </div>
 
-  <div class="card">
-    <div class="card-body">
-      <div class="table-responsive">
-      <table class="table table-bordered table-hover">
-        <thead>
-          <tr>
-            <th>Tanggal</th>
-            <th>Kategori</th>
-            <th>Jenis</th>
-            <th>Deskripsi</th>
-            <th class="text-end">Nominal</th>
-            <th width="180">Aksi</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% if (transactions.length === 0) { %>
-            <tr>
-              <td colspan="6" class="text-center text-muted">
-                Belum ada transaksi.
-              </td>
-            </tr>
-          <% } %>
+  <!-- Form Pencarian -->
+  <!-- Filter & Pencarian -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="GET" action="/transactions">
+      <div class="row g-3">
 
-          <% transactions.forEach(item => { %>
-            <tr>
-              <td><%= item.transaction_date %></td>
-              <td><%= item.categories?.name || '-' %></td>
-              <td>
-                <span class="badge bg-<%= item.categories?.type === 'income' ? 'success' : 'danger' %>">
-                  <%= item.categories?.type === 'income' ? 'Pemasukan' : 'Pengeluaran' %>
-                </span>
-              </td>
-              <td><%= item.description || '-' %></td>
-              <td class="text-end fw-bold">
-                Rp <%= Number(item.amount).toLocaleString('id-ID') %>
-              </td>
-              <td>
-                <a
-                  href="/transactions/edit/<%= item.id %>"
-                  class="btn btn-sm btn-warning"
-                >
-                  Edit
-                </a>
+        <!-- Search -->
+        <div class="col-12 col-lg-5">
+          <input
+            type="text"
+            name="search"
+            value="<%= search || '' %>"
+            class="form-control"
+            placeholder="Cari kategori atau deskripsi..."
+          >
+        </div>
 
-                <a
-                  href="/transactions/delete/<%= item.id %>"
-                  class="btn btn-sm btn-danger"
-                  onclick="return confirm('Hapus transaksi ini?')"
-                >
-                  Hapus
-                </a>
-              </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
+        <!-- Bulan -->
+        <div class="col-6 col-lg-2">
+          <select name="month" class="form-select">
+            <option value="">Semua Bulan</option>
+            <option value="01" <%= month === '01' ? 'selected' : '' %>>Januari</option>
+            <option value="02" <%= month === '02' ? 'selected' : '' %>>Februari</option>
+            <option value="03" <%= month === '03' ? 'selected' : '' %>>Maret</option>
+            <option value="04" <%= month === '04' ? 'selected' : '' %>>April</option>
+            <option value="05" <%= month === '05' ? 'selected' : '' %>>Mei</option>
+            <option value="06" <%= month === '06' ? 'selected' : '' %>>Juni</option>
+            <option value="07" <%= month === '07' ? 'selected' : '' %>>Juli</option>
+            <option value="08" <%= month === '08' ? 'selected' : '' %>>Agustus</option>
+            <option value="09" <%= month === '09' ? 'selected' : '' %>>September</option>
+            <option value="10" <%= month === '10' ? 'selected' : '' %>>Oktober</option>
+            <option value="11" <%= month === '11' ? 'selected' : '' %>>November</option>
+            <option value="12" <%= month === '12' ? 'selected' : '' %>>Desember</option>
+          </select>
+        </div>
+
+        <!-- Tahun -->
+        <div class="col-6 col-lg-2">
+          <select name="year" class="form-select">
+            <option value="">Semua Tahun</option>
+            <% years.forEach(y => { %>
+              <option
+                value="<%= y %>"
+                <%= String(year) === String(y) ? 'selected' : '' %>
+              >
+                <%= y %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <!-- Tombol Cari -->
+        <div class="col-6 col-lg-2 d-grid">
+          <button class="btn btn-primary">
+            <i class="bi bi-search me-1"></i>
+            Terapkan
+          </button>
+        </div>
+
+        <!-- Reset -->
+        <div class="col-6 col-lg-1 d-grid">
+          <a href="/transactions" class="btn btn-outline-secondary">
+            Reset
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="row g-3 mb-4">
+  <div class="col-12 col-md-3">
+    <div class="card card-summary">
+      <div class="card-body">
+        <small class="text-muted">Jumlah Data</small>
+        <h5 class="mb-0"><%= totalData %></h5>
       </div>
     </div>
   </div>
+
+  <div class="col-12 col-md-3">
+    <div class="card card-summary">
+      <div class="card-body">
+        <small class="text-muted">Pemasukan</small>
+        <h5 class="text-success mb-0">
+          Rp <%= Number(totalIncome).toLocaleString('id-ID') %>
+        </h5>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-3">
+    <div class="card card-summary">
+      <div class="card-body">
+        <small class="text-muted">Pengeluaran</small>
+        <h5 class="text-danger mb-0">
+          Rp <%= Number(totalExpense).toLocaleString('id-ID') %>
+        </h5>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-3">
+    <div class="card card-summary">
+      <div class="card-body">
+        <small class="text-muted">Saldo</small>
+        <h5 class="text-primary mb-0">
+          Rp <%= Number(balance).toLocaleString('id-ID') %>
+        </h5>
+      </div>
+    </div>
+  </div>
+</div>
+  <!-- Tabel -->
+  <div class="card">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Kategori</th>
+              <th>Jenis</th>
+              <th>Deskripsi</th>
+              <th class="text-end">Nominal</th>
+              <th width="180">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (transactions.length === 0) { %>
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                  Tidak ada data transaksi.
+                </td>
+              </tr>
+            <% } %>
+
+            <% transactions.forEach(item => { %>
+              <tr>
+                <td><%= item.transaction_date %></td>
+                <td><%= item.categories?.name || '-' %></td>
+                <td>
+                  <span class="badge bg-<%= item.categories?.type === 'income' ? 'success' : 'danger' %>">
+                    <%= item.categories?.type === 'income' ? 'Pemasukan' : 'Pengeluaran' %>
+                  </span>
+                </td>
+                <td><%= item.description || '-' %></td>
+                <td class="text-end fw-semibold">
+                  Rp <%= Number(item.amount).toLocaleString('id-ID') %>
+                </td>
+                <td>
+                  <a
+                    href="/transactions/edit/<%= item.id %>"
+                    class="btn btn-sm btn-warning"
+                  >
+                    Edit
+                  </a>
+
+                  <a
+                    href="/transactions/delete/<%= item.id %>"
+                    class="btn btn-sm btn-danger"
+                    onclick="return confirm('Hapus transaksi ini?')"
+                  >
+                    Hapus
+                  </a>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <% if (totalPages > 1) { %>
+    <nav class="mt-4">
+      <ul class="pagination justify-content-center flex-wrap">
+
+        <!-- Previous -->
+        <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+          <a
+            class="page-link"
+            href="/transactions?page=<%= currentPage - 1 %>&search=<%= encodeURIComponent(search || '') %>&month=<%= month || '' %>&year=<%= year || '' %>"
+          >
+            Previous
+          </a>
+        </li>
+
+        <!-- Nomor Halaman -->
+        <% for (let i = 1; i <= totalPages; i++) { %>
+          <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+            <a
+              class="page-link"
+              href="/transactions?page=<%= i %>&search=<%= encodeURIComponent(search || '') %>&month=<%= month || '' %>&year=<%= year || '' %>"
+            >
+              <%= i %>
+            </a>
+          </li>
+        <% } %>
+
+        <!-- Next -->
+        <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+          <a
+            class="page-link"
+            href="/transactions?page=<%= currentPage + 1 %>&search=<%= encodeURIComponent(search || '') %>&month=<%= month || '' %>&year=<%= year || '' %>"
+          >
+            Next
+          </a>
+        </li>
+      </ul>
+    </nav>
+  <% } %>
 </div>
 
 <%- include('../partials/footer') %>

@@ -14,11 +14,18 @@ app.use(methodOverride('_method'))
 app.use(express.static(path.join(__dirname, 'public')))
 
 // Session
+app.set('trust proxy', 1)
+
 app.use(
   session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || 'catat-uang-secret',
     resave: false,
     saveUninitialized: false,
+    cookie: {
+      secure: false,      // true hanya jika HTTPS langsung
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 hari
+    },
   })
 )
 

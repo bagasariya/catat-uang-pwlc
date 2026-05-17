@@ -1,9 +1,24 @@
 const express = require('express')
 const router = express.Router()
-const auth = require('../middleware/authMiddleware')
+
+const authMiddleware = require('../middleware/authMiddleware')
 const reportController = require('../controllers/reportController')
 
-router.get('/', auth, reportController.index)
-router.get('/pdf', auth, reportController.exportPdf)
+// Halaman laporan
+router.get('/', authMiddleware, reportController.index)
+
+// Export PDF
+router.get(
+  '/export/pdf',
+  authMiddleware,
+  reportController.exportPdf
+)
+
+// Export Excel
+router.get(
+  '/export/excel',
+  authMiddleware,
+  reportController.exportExcel
+)
 
 module.exports = router
